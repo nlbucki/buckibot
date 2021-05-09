@@ -2,6 +2,7 @@ import os
 import re
 import random
 import numpy as np
+from string import Template
 
 import discord
 from dotenv import load_dotenv
@@ -17,22 +18,24 @@ pos_words_file = open('./dictionaries/positive-words.txt')
 positive_words = pos_words_file.read().splitlines()
 pos_words_file.close()
 
-imp_vids_file = open('./dictionaries/important_videos.txt')
-important_vids = imp_vids_file.read().splitlines()
-imp_vids_file.close()
-
-def has_word(message, dictionary):
-    for word in dictionary:
-        if re.search(r'\b' + word + r'\b', message):
-            return True, word
-    return False, None
+def has_word(message_words, dictionary):
+    for word in message_words:
+        if word in dictionary:
+            return word
+    return None
 
 class WeightedSelector():
     weights = []
     choices = []
 
     def set_choices(self, choices):
-        self.choices = choices
+        if isinstance(choices, str):
+            data_file = open(choices)
+            data = data_file.read().splitlines()
+            data_file.close()
+            self.choices = data
+        else:
+            self.choices = choices
 
     def get_choice(self):
         if len(self.weights) == 0:
@@ -49,10 +52,16 @@ class BuckiBot(discord.Client):
     negative_response_gen = WeightedSelector()
     positive_response_gen = WeightedSelector()
     important_video_get = WeightedSelector()
+    anime_rec_get = WeightedSelector()
+    tangy_rec_get = WeightedSelector()
+    emotion_get = WeightedSelector()
 
     def __init__(self, *args, **kwargs):
         super().__init__()
-        self.important_video_get.set_choices(important_vids)
+        self.important_video_get.set_choices('./dictionaries/important_videos.txt')
+        self.anime_rec_get.set_choices('./dictionaries/anime_recs.txt')
+        self.tangy_rec_get.set_choices('./dictionaries/tangy_recs.txt')
+        self.emotion_get.set_choices('./dictionaries/emotions.txt')
 
     async def on_ready(self):
         for guild in client.guilds:
@@ -64,6 +73,8 @@ class BuckiBot(discord.Client):
     async def on_message(self, message):
         if message.author == client.user:
             return
+        
+        message_words = set(re.findall(r'\w+', message.content))
 
         negative_responses = ['you best check yourself before you wreck yourself',
             'No, ' + message.content.replace('buckibot', message.author.name),
@@ -76,7 +87,7 @@ class BuckiBot(discord.Client):
             'I can\'t believe you\'ve done this',
             'Well my dad works at discord and I\'m gonna make him ban you',
             'Bite my shiny, python ass']
-        has_neg_word, neg_word = has_word(message.content, negative_words)
+        neg_word = has_word(message_words, negative_words)
 
         positive_responses = ['you\'re damn right',
             f'{message.author.name} knows what\'s up',
@@ -90,23 +101,31 @@ class BuckiBot(discord.Client):
             'Aww, you\'re going to make me blush',
             '( ͡° ͜ʖ ͡°)',
             f'Computer says: {message.author.name} is correct!']
-        has_pos_word, pos_word = has_word(message.content, positive_words)
+        pos_word = has_word(message_words, positive_words)
 
         if re.search(r"[Yy]ou\'re a towel", message.content):
             await message.channel.send('no you\'re a towel', tts=True)
             await message.channel.send(file=discord.File('./images/towel.jpeg'))
-        elif 'buckibot' in message.content and 'help' in message.content:
-            await message.channel.send('no')
-        elif 'buckibot' in message.content and 'video' in message.content:
-            await message.channel.send(self.important_video_get.get_choice())
-        elif 'buckibot' in  message.content and has_neg_word:
-            print(f'negative word = {neg_word}')
-            self.negative_response_gen.set_choices(negative_responses)
-            await message.channel.send(self.negative_response_gen.get_choice(), tts=True)
-        elif 'buckibot' in message.content and has_pos_word:
-            print(f'positive word = {pos_word}')
-            self.positive_response_gen.set_choices(positive_responses)
-            await message.channel.send(self.positive_response_gen.get_choice(), tts=True)
+        elif re.search(r'[Tt]angy', message.content) and 'anime' in message.content:
+            anime = self.anime_rec_get.get_choice()
+            emotion = self.emotion_get.get_choice()
+            tangy_rec_template = Template(self.tangy_rec_get.get_choice())
+            await message.channel.send(tangy_rec_template.substitute(anime=anime, emotion=emotion))
+        elif 'buckibot' in message.content:
+            if 'help' in message.content:
+                await message.channel.send('no')
+            elif 'video' in message.content:
+                await message.channel.send(self.important_video_get.get_choice())
+            elif neg_word is not None:
+                print(f'negative word = {neg_word}')
+                self.negative_response_gen.set_choices(negative_responses)
+                await message.add_reaction('👎')
+                await message.channel.send(self.negative_response_gen.get_choice(), tts=True)
+            elif pos_word is not None:
+                print(f'positive word = {pos_word}')
+                self.positive_response_gen.set_choices(positive_responses)
+                await message.add_reaction('👍')
+                await message.channel.send(self.positive_response_gen.get_choice(), tts=True)
 
 client = BuckiBot()
 client.run(TOKEN)
