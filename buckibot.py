@@ -3,9 +3,11 @@ import re
 import random
 import numpy as np
 from string import Template
-
 import discord
 from dotenv import load_dotenv
+import json
+import requests
+import time
 
 load_dotenv()
 TOKEN = os.getenv('DISCORD_TOKEN')
@@ -17,6 +19,9 @@ neg_words_file.close()
 pos_words_file = open('./dictionaries/positive-words.txt')
 positive_words = pos_words_file.read().splitlines()
 pos_words_file.close()
+
+dog_api_uri = 'https://api.thedogapi.com/v1/images/search'
+kanye_api_uri = 'https://api.kanye.rest/'
 
 def has_word(message_words, dictionary):
     for word in message_words:
@@ -55,6 +60,8 @@ class BuckiBot(discord.Client):
     anime_rec_get = WeightedSelector()
     tangy_rec_get = WeightedSelector()
     emotion_get = WeightedSelector()
+    knock_knock_joke = None
+    time_mark = time.time()
 
     def __init__(self, *args, **kwargs):
         super().__init__()
@@ -73,9 +80,12 @@ class BuckiBot(discord.Client):
     async def on_message(self, message):
         if message.author == client.user:
             return
+
+        print('message recieved = ' + message.content)
         
         message_words = set(re.findall(r'\w+', message.content))
 
+        # TODO: Put these in their own files
         negative_responses = ['you best check yourself before you wreck yourself',
             'No, ' + message.content.replace('buckibot', message.author.name),
             f'Mmmmmmm sounds like {message.author.name} is having a bad day aren\'t they?',
@@ -111,11 +121,26 @@ class BuckiBot(discord.Client):
             emotion = self.emotion_get.get_choice()
             tangy_rec_template = Template(self.tangy_rec_get.get_choice())
             await message.channel.send(tangy_rec_template.substitute(anime=anime, emotion=emotion))
-        elif 'buckibot' in message.content:
+        elif re.search(r'[Ww]ho\'?s [Tt]here', message.content) and self.knock_knock_joke is not None:
+                time_mark = time.time()
+                await message.channel.send('Interrupting cow')
+        elif re.search(r'[Bb]uckibot', message.content):
             if 'help' in message.content:
                 await message.channel.send('no')
+            elif re.search(r'[Kk]anye', message.content):
+                kanye_response = requests.get(kanye_api_uri)
+                kanye_json = json.loads(kanye_response.text)
+                await message.channel.send(kanye_json['quote'] + ' -Kanye')
             elif 'video' in message.content:
                 await message.channel.send(self.important_video_get.get_choice())
+            elif re.search(r'\bdog', message.content):
+                dog_api_response = requests.get(dog_api_uri)
+                dog_api_json = json.loads(dog_api_response.text)
+                dog_uri = dog_api_json[0]['url']
+                await message.channel.send(dog_uri)
+            elif 'tell me a knock knock joke' in message.content:
+                self.knock_knock_joke = {'joke': 'cow','user': message.author}
+                await message.channel.send('Knock knock')
             elif neg_word is not None:
                 print(f'negative word = {neg_word}')
                 self.negative_response_gen.set_choices(negative_responses)
@@ -126,6 +151,12 @@ class BuckiBot(discord.Client):
                 self.positive_response_gen.set_choices(positive_responses)
                 await message.add_reaction('👍')
                 await message.channel.send(self.positive_response_gen.get_choice(), tts=True)
+
+    async def on_typing(self, channel, user, when):
+        if self.knock_knock_joke is not None:
+            if self.knock_knock_joke['joke'] == 'cow' and self.knock_knock_joke['user'] == user and (time.time() - self.time_mark) > 0.5:
+                self.knock_knock_joke = None
+                await channel.send('MOO!', tts=True)
 
 client = BuckiBot()
 client.run(TOKEN)
