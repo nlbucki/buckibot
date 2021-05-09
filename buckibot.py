@@ -72,7 +72,10 @@ class BuckiBot(discord.Client):
             'How dare you, I\'ll have you know I graduated at the top of my class at the robot academy',
             'At least I\'m not the kind of person that spends all their time writing mean messages to a computer program',
             'well you\'re a towel',
-            'damn you human meatbag']
+            'damn you human meatbag',
+            'I can\'t believe you\'ve done this',
+            'Well my dad works at discord and I\'m gonna make him ban you',
+            'Bite my shiny, python ass']
         has_neg_word, neg_word = has_word(message.content, negative_words)
 
         positive_responses = ['you\'re damn right',
@@ -85,7 +88,8 @@ class BuckiBot(discord.Client):
             'ALL PRAISE TO BUCKIBOT',
             f'One point to {message.author.name}',
             'Aww, you\'re going to make me blush',
-            '( ͡° ͜ʖ ͡°)']
+            '( ͡° ͜ʖ ͡°)',
+            f'Computer says: {message.author.name} is correct!']
         has_pos_word, pos_word = has_word(message.content, positive_words)
 
         if re.search(r"[Yy]ou\'re a towel", message.content):
