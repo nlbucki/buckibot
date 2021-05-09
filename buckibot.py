@@ -57,6 +57,7 @@ class BuckiBot(discord.Client):
     negative_response_gen = WeightedSelector()
     positive_response_gen = WeightedSelector()
     important_video_get = WeightedSelector()
+    bubz_video_get = WeightedSelector()
     anime_rec_get = WeightedSelector()
     tangy_rec_get = WeightedSelector()
     emotion_get = WeightedSelector()
@@ -66,6 +67,7 @@ class BuckiBot(discord.Client):
     def __init__(self, *args, **kwargs):
         super().__init__()
         self.important_video_get.set_choices('./dictionaries/important_videos.txt')
+        self.bubz_video_get.set_choices('./dictionaries/bubz_videos.txt')
         self.anime_rec_get.set_choices('./dictionaries/anime_recs.txt')
         self.tangy_rec_get.set_choices('./dictionaries/tangy_recs.txt')
         self.emotion_get.set_choices('./dictionaries/emotions.txt')
@@ -131,6 +133,8 @@ class BuckiBot(discord.Client):
                 kanye_response = requests.get(kanye_api_uri)
                 kanye_json = json.loads(kanye_response.text)
                 await message.channel.send(kanye_json['quote'] + ' -Kanye')
+            elif re.search(r'\b[Bb]ubz', message.content):
+                await message.channel.send(self.bubz_video_get.get_choice())
             elif 'video' in message.content:
                 await message.channel.send(self.important_video_get.get_choice())
             elif re.search(r'\bdog', message.content):
@@ -145,12 +149,12 @@ class BuckiBot(discord.Client):
                 print(f'negative word = {neg_word}')
                 self.negative_response_gen.set_choices(negative_responses)
                 await message.add_reaction('👎')
-                await message.channel.send(self.negative_response_gen.get_choice(), tts=True)
+                await message.channel.send(self.negative_response_gen.get_choice())
             elif pos_word is not None:
                 print(f'positive word = {pos_word}')
                 self.positive_response_gen.set_choices(positive_responses)
                 await message.add_reaction('👍')
-                await message.channel.send(self.positive_response_gen.get_choice(), tts=True)
+                await message.channel.send(self.positive_response_gen.get_choice())
 
     async def on_typing(self, channel, user, when):
         if self.knock_knock_joke is not None:

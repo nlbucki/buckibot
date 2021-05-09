@@ -3947,7 +3947,6 @@ soreness
 sorrow
 sorrowful
 sorrowfully
-sorry
 sour
 sourly
 spade
