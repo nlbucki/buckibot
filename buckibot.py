@@ -8,6 +8,9 @@ from dotenv import load_dotenv
 import json
 import requests
 import time
+from selenium import webdriver
+from selenium.webdriver.chrome.options import Options
+import signal
 
 load_dotenv()
 TOKEN = os.getenv('DISCORD_TOKEN')
@@ -22,6 +25,20 @@ pos_words_file.close()
 
 dog_api_uri = 'https://api.thedogapi.com/v1/images/search'
 kanye_api_uri = 'https://api.kanye.rest/'
+
+chrome_options = Options()
+chrome_options.add_argument("--headless")
+chrome_options.add_argument("--disable-extensions")
+chrome_options.add_argument("--disable-gpu")
+browser = webdriver.Chrome(options=chrome_options)
+print('Web driver started')
+
+def signal_handler(signal, frame):
+    print('Closing browser')
+    browser.quit()
+    sys.exit(0)
+
+signal.signal(signal.SIGINT, signal_handler)
 
 def has_word(message_words, dictionary):
     for word in message_words:
@@ -62,6 +79,7 @@ class BuckiBot(discord.Client):
     tangy_rec_get = WeightedSelector()
     emotion_get = WeightedSelector()
     logan_get = WeightedSelector()
+    uard_get = WeightedSelector()
     knock_knock_joke = None
     time_mark = time.time()
 
@@ -74,6 +92,7 @@ class BuckiBot(discord.Client):
         self.emotion_get.set_choices('./dictionaries/emotions.txt')
         logan_dir = './images/Logan'
         self.logan_get.set_choices([os.path.join(logan_dir, f) for f in os.listdir('./images/Logan')])
+        self.uard_get.set_choices(['https://downforacross.com/beta/play/{}'.format(i) for i in range(13985)])
 
     async def on_ready(self):
         for guild in client.guilds:
@@ -152,6 +171,16 @@ class BuckiBot(discord.Client):
             elif re.search(r'tell me a.*knock knock joke', message.content):
                 self.knock_knock_joke = {'joke': 'cow_start','user': message.author}
                 await message.channel.send('Knock knock')
+            elif 'uard' in message.content:
+                link = self.uard_get.get_choice()
+                await message.channel.send('Creating new uard (this takes a while and I don\'t know how to speed it up)')
+                browser.get(link)
+                start_time = time.time()
+                while time.time() - start_time < 30 and link == browser.current_url:
+                    print('Waiting for uard to start...')
+                    time.sleep(1)
+                print('uard started')
+                await message.channel.send(browser.current_url)
             elif neg_word is not None:
                 print(f'negative word = {neg_word}')
                 self.negative_response_gen.set_choices(negative_responses)
