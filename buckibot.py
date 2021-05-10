@@ -61,6 +61,7 @@ class BuckiBot(discord.Client):
     anime_rec_get = WeightedSelector()
     tangy_rec_get = WeightedSelector()
     emotion_get = WeightedSelector()
+    logan_get = WeightedSelector()
     knock_knock_joke = None
     time_mark = time.time()
 
@@ -71,6 +72,8 @@ class BuckiBot(discord.Client):
         self.anime_rec_get.set_choices('./dictionaries/anime_recs.txt')
         self.tangy_rec_get.set_choices('./dictionaries/tangy_recs.txt')
         self.emotion_get.set_choices('./dictionaries/emotions.txt')
+        logan_dir = './images/Logan'
+        self.logan_get.set_choices([os.path.join(logan_dir, f) for f in os.listdir('./images/Logan')])
 
     async def on_ready(self):
         for guild in client.guilds:
@@ -125,10 +128,14 @@ class BuckiBot(discord.Client):
             await message.channel.send(tangy_rec_template.substitute(anime=anime, emotion=emotion))
         elif re.search(r'[Ww]ho\'?s [Tt]here', message.content) and self.knock_knock_joke is not None:
                 time_mark = time.time()
+                self.knock_knock_joke['joke'] = 'cow'
                 await message.channel.send('Interrupting cow')
         elif re.search(r'[Bb]uckibot', message.content):
             if 'help' in message.content:
                 await message.channel.send('no')
+            elif re.search('[Nn]athandog', message.content) or re.search('[Ll]ogan', message.content):
+                img = self.logan_get.get_choice()
+                await message.channel.send(file=discord.File(img))
             elif re.search(r'[Kk]anye', message.content):
                 kanye_response = requests.get(kanye_api_uri)
                 kanye_json = json.loads(kanye_response.text)
@@ -142,8 +149,8 @@ class BuckiBot(discord.Client):
                 dog_api_json = json.loads(dog_api_response.text)
                 dog_uri = dog_api_json[0]['url']
                 await message.channel.send(dog_uri)
-            elif 'tell me a knock knock joke' in message.content:
-                self.knock_knock_joke = {'joke': 'cow','user': message.author}
+            elif re.search(r'tell me a.*knock knock joke', message.content):
+                self.knock_knock_joke = {'joke': 'cow_start','user': message.author}
                 await message.channel.send('Knock knock')
             elif neg_word is not None:
                 print(f'negative word = {neg_word}')
