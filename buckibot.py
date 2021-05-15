@@ -159,6 +159,8 @@ class BuckiBot(discord.Client):
                 response = requests.get('https://v2.jokeapi.dev/joke/Any?type=single')
                 response_json = json.loads(response.text)
                 await message.channel.send(response_json['joke'])
+            elif 'tayne' in message.content:
+                await message.channel.send('https://i.imgur.com/sARkcxu.gif')
             elif 'buckibot tell ' in message.content:
                 name = re.search(r'(?<=buckibot tell )(\w*)', message.content).groups()[0]
                 print(f'name = <{name}>')
