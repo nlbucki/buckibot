@@ -11,6 +11,8 @@ import time
 from selenium import webdriver
 from selenium.webdriver.chrome.options import Options
 import signal
+#import language_check
+#language_check_tool = language_check.LanguageTool('en-US')
 
 load_dotenv()
 TOKEN = os.getenv('DISCORD_TOKEN')
@@ -152,6 +154,27 @@ class BuckiBot(discord.Client):
         elif re.search(r'[Bb]uckibot', message.content):
             if 'help' in message.content:
                 await message.channel.send('no')
+            elif 'buckibot tell ' in message.content:
+                name = re.search(r'(?<=buckibot tell )(\w*)', message.content).groups()[0]
+                print(f'name = <{name}>')
+                init_connector = re.search(r'(?<='+name+' )(\w*\'*\w*)', message.content).groups()[0]
+                print(f'init_connector = <{init_connector}>')
+                connector = ''
+                if init_connector == 'he' or init_connector == 'she' or init_connector == 'they':
+                    connector = 'you'
+                elif init_connector == 'he\'s' or init_connector == 'she\'s' or init_connector == 'they\'re':
+                    connector = 'you\'re'
+                elif init_connector == 'to' or init_connector == 'should':
+                    print('deleting connector')
+                    connector = ''
+                else:
+                    connector = init_connector
+                phrase = re.search(r'(?<='+init_connector+' )(.*)', message.content).groups()[0]
+                phrase = phrase.replace('is', 'are')
+                print(f'phrase = <{phrase}>')
+                output = name + ' ' + connector + ' ' + phrase
+                #output = language_check.correct(output, language_check_tool.check(output))
+                await message.channel.send(output)
             elif re.search('[Nn]athandog', message.content) or re.search('[Ll]ogan', message.content):
                 img = self.logan_get.get_choice()
                 await message.channel.send(file=discord.File(img))
