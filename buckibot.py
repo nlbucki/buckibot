@@ -32,6 +32,7 @@ chrome_options = Options()
 chrome_options.add_argument("--headless")
 chrome_options.add_argument("--disable-extensions")
 chrome_options.add_argument("--disable-gpu")
+chrome_options.page_load_strategy = 'none'
 browser = webdriver.Chrome(options=chrome_options)
 print('Web driver started')
 
@@ -196,14 +197,15 @@ class BuckiBot(discord.Client):
                 await message.channel.send('Knock knock')
             elif 'uard' in message.content:
                 link = self.uard_get.get_choice()
-                await message.channel.send('Creating new uard (this takes a while and I don\'t know how to speed it up)')
+                await message.channel.send('Creating new uard')
                 browser.get(link)
                 start_time = time.time()
-                while time.time() - start_time < 30 and link == browser.current_url:
+                while time.time() - start_time < 15 and link == browser.current_url:
                     print('Waiting for uard to start...')
-                    time.sleep(1)
+                    time.sleep(0.1)
                 print('uard started')
                 await message.channel.send(browser.current_url)
+                browser.refresh()
             elif neg_word is not None:
                 print(f'negative word = {neg_word}')
                 self.negative_response_gen.set_choices(negative_responses)
